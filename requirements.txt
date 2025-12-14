@@ -1,2 +1,5 @@
 streamlit>=1.28.0
 watchdog
+moviepy>=1.0.3
+Pillow>=9.0.0
+imageio-ffmpeg>=0.4.8

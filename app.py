@@ -7,6 +7,8 @@ from datetime import datetime
 import tempfile
 import os
 from render import main as render_main
+from intro_generator import create_intro_video, concatenate_videos
+from outro_generator import create_outro_video, concatenate_videos_with_outro
 
 import subprocess, shutil, sys
 
@@ -74,23 +76,54 @@ def check_ffmpeg():
         return False
 
 
-def render_video(template_folder, image_path, output_name):
-    """Render video using the render module."""
+def render_video(template_folder, image_path, output_name, customer_name):
+    """Render video using the render module with intro."""
     try:
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
+        temp_dir = Path(tempfile.gettempdir()) / "birthday_wisher"
+        temp_dir.mkdir(exist_ok=True)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = output_dir / f"{output_name}_{timestamp}.mp4"
         
-        # Call the render function
+        # Get template video path for dimensions
+        template_video_path = Path("templates") / template_folder / "template.mp4"
+        
+        # Create intro video matching template dimensions
+        intro_path = temp_dir / f"intro_{timestamp}.mp4"
+        create_intro_video(
+            customer_name, 
+            str(intro_path), 
+            duration=4,
+            template_video=str(template_video_path) if template_video_path.exists() else None
+        )
+        # Render main video
+        main_video_path = temp_dir / f"main_{timestamp}.mp4"
         render_main(
             template_folder=str(Path("templates") / template_folder),
             image_path=image_path,
-            out_path=str(output_path)
+            out_path=str(main_video_path)
         )
         
-        return output_path
+        # Create outro video matching template dimensions
+        outro_path = temp_dir / f"outro_{timestamp}.mp4"
+        create_outro_video(
+            str(outro_path),
+            duration=3,
+            template_video=str(template_video_path) if template_video_path.exists() else None
+        )
+        
+        # Concatenate intro, main video, and outro
+        final_output_path = output_dir / f"{output_name}_{timestamp}.mp4"
+        concatenate_videos_with_outro(str(intro_path), str(main_video_path), str(outro_path), str(final_output_path))
+        
+        # Clean up temporary files
+        intro_path.unlink(missing_ok=True)
+        main_video_path.unlink(missing_ok=True)
+        outro_path.unlink(missing_ok=True)
+        main_video_path.unlink(missing_ok=True)
+        
+        return final_output_path
     except Exception as e:
         raise Exception(f"Rendering failed: {str(e)}")
 
@@ -144,7 +177,14 @@ with tab1:
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.subheader("1. Upload Image")
+        st.subheader("1. Customer Information")
+        customer_name = st.text_input(
+            "Customer Name *",
+            placeholder="Enter customer's name",
+            help="This name will appear in the intro: 'Happy Birthday [Name] from City Bakers'"
+        )
+        
+        st.subheader("2. Upload Image")
         uploaded_file = st.file_uploader(
             "Choose an image file",
             type=['jpg', 'jpeg', 'png'],
@@ -165,7 +205,7 @@ with tab1:
             # Display preview
             st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
         
-        st.subheader("2. Output Settings")
+        st.subheader("3. Output Settings")
         output_name = st.text_input(
             "Output filename (without extension)",
             value="birthday_video",
@@ -196,17 +236,20 @@ with tab1:
     
     # Render process
     if render_button:
-        if not uploaded_file:
+        if not customer_name or not customer_name.strip():
+            st.error("Please enter customer's name first!")
+        elif not uploaded_file:
             st.error("Please upload an image first!")
         elif not output_name:
             st.error("Please provide an output filename!")
         else:
-            with st.spinner("🎬 Rendering video... This may take a few moments."):
+            with st.spinner("🎬 Creating intro and rendering video... This may take a few moments."):
                 try:
                     output_path = render_video(
                         selected_template,
                         st.session_state.uploaded_image_path,
-                        output_name
+                        output_name,
+                        customer_name.strip()
                     )
                     
                     st.success(f"✅ Video rendered successfully!")
