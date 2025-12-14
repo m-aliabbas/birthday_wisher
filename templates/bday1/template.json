@@ -1,0 +1,10 @@
+{
+  "template_video": "template.mp4",
+  "border_png": "border.png",
+  "placeholder": { "x": 50, "y": 90, "w": 960, "h": 890 },
+
+  "chroma": { "hex": "3ec954", "similarity": 0.23, "blend": 0.03 },
+
+  "fit": "cover",
+  "output": { "fps": 30, "crf": 18, "preset": "medium" }
+}
