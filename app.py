@@ -8,6 +8,16 @@ import tempfile
 import os
 from render import main as render_main
 
+import subprocess, shutil, sys
+
+def install_ffmpeg_ubuntu():
+    if shutil.which("ffmpeg"):
+        print("ffmpeg already installed")
+        return
+    subprocess.check_call(["sudo", "apt-get", "update"])
+    subprocess.check_call(["sudo", "apt-get", "install", "-y", "ffmpeg"])
+    print("ffmpeg installed ✅")
+install_ffmpeg_ubuntu()
 
 # Set page config
 st.set_page_config(
