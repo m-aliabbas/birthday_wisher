@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  birthday-wisher:
+    build: .
+    container_name: birthday-wisher-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./templates:/app/templates:ro
+      - ./output:/app/output
+      - ./uploads:/app/uploads
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    restart: unless-stopped
